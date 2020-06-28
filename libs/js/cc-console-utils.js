@@ -117,51 +117,117 @@ const initConsoleUtil = function () {
         return target;
     }
     cc.cache = function () {
-        let rawCacheData = cc.loader._cache;
-        let cacheData = [];
-        let totalTextureSize = 0;
-        for (let k in rawCacheData) {
-            let item = rawCacheData[k];
-            if (item.type !== 'js' && item.type !== 'json') {
-                let itemName = '_';
-                let preview = '';
-                let content = (item.content && item.content.__classname__) ? item.content.__classname__ : item.type;
-                let formatSize = -1;
-                if (item.type === 'png' || item.type === 'jpg') {
-                    let texture = rawCacheData[k.replace('.' + item.type, '.json')];
-                    if (texture && texture._owner && texture._owner._name) {
-                        itemName = texture._owner._name;
-                        preview = texture.content.url;
-                    }
-                } else {
-                    if (item.content.name && item.content.name.length > 0) {
-                        itemName = item.content.name;
-                    } else if (item._owner) {
-                        itemName = (item._owner && item._owner.name) || '_';
-                    }
-                    if (content === 'cc.Texture2D') {
-                        let texture = item.content;
-                        preview = texture.url;
-                        let textureSize = texture.width * texture.height * ((texture._native === '.jpg' ? 3 : 4) / 1024 / 1024);
-                        totalTextureSize += textureSize;
-                        // sizeStr = textureSize.toFixed(3) + 'M';
-                        formatSize = Math.round(textureSize * 1000) / 1000;
-                    } else if (content === 'cc.SpriteFrame') {
-                        preview = item.content._texture.url;
-                    }
-                }
-                cacheData.push({
-                    queueId: item.queueId,
-                    type: item.type,
-                    name: itemName,
-                    preview: preview,
-                    id: item.id,
-                    content: content,
-                    size: formatSize
+
+        let bundles = cc.assetManager.bundles;
+        let findRealName = function(asset){
+            let uuid = asset._uuid;
+            let realname;
+            let realbundle;
+            bundles.forEach((bundle)=>{
+                let $bundle = bundle;
+                bundle._config.paths.forEach((path)=>{
+                    path.forEach((p)=>{
+                        if ( p.uuid == uuid ){
+                            realname = p.path;
+                            realbundle = bundle.name;
+                        }
+                    });
                 });
+            });
+
+            if (realname && realbundle){
+                return [realbundle, realname];    
             }
+            return null;
         }
-        let cacheTitle = `缓存 [文件总数:${cacheData.length}][纹理缓存:${totalTextureSize.toFixed(2) + 'M'}]`;
+        
+        let assets = cc.assetManager.assets;
+        let totalTexSize = 0;
+
+        let cacheData = [];
+        assets.forEach((asset, key)=>{
+            let clsname = asset.__classname__;
+            let preview = "";
+            let itemName = "_";
+            let formatSize = 0;
+            if (clsname == "cc.Texture2D"){
+                preview = asset.nativeUrl;
+                itemName = asset._uuid + asset._native;
+                let texSize = asset.width * asset.height * ((asset._native === '.jpg' ? 3 : 4) / 1024 / 1024);
+                totalTexSize += texSize;
+                formatSize = Math.round(texSize * 1000) / 1000;
+            }else{
+                itemName = asset._name;
+                if (clsname == "cc.SpriteFrame"){
+                    preview = asset._texture.nativeUrl;
+                }
+            }
+
+            let bundle = "-";
+            let findWt = findRealName(asset);
+            if (findWt){
+                bundle = findWt[0];
+                itemName = findWt[1];
+            }
+            cacheData.push({
+                type: clsname,
+                name: itemName,
+                preview: preview,
+                ref: asset.refCount,
+                bundle: bundle,
+                size: formatSize
+            });
+        });
+
+        let cacheTitle = `缓存 [文件总数:${cacheData.length}][纹理缓存:${totalTexSize.toFixed(2) + 'M'}]`;
         return [cacheData, cacheTitle];
+
+
+        // let rawCacheData = cc.assetManager.assets;
+        // let cacheData = [];
+        // let totalTextureSize = 0;
+        // for (let k in rawCacheData) {
+        //     let item = rawCacheData[k];
+        //     if (item.type !== 'js' && item.type !== 'json') {
+        //         let itemName = '_';
+        //         let preview = '';
+        //         let content = item.__classname__;//(item.content && item.content.__classname__) ? item.content.__classname__ : item.type;
+        //         let formatSize = -1;
+        //         if (item.type === 'png' || item.type === 'jpg') {
+        //             let texture = rawCacheData[k.replace('.' + item.type, '.json')];
+        //             if (texture && texture._owner && texture._owner._name) {
+        //                 itemName = texture._owner._name;
+        //                 preview = texture.content.url;
+        //             }
+        //         } else {
+        //             if (item.name && item.name.length > 0) {
+        //                 itemName = item.name;
+        //             } else if (item._owner) {
+        //                 itemName = (item._owner && item._owner.name) || '_';
+        //             }
+        //             if (content === 'cc.Texture2D') {
+        //                 let texture = item.content;
+        //                 preview = texture.url;
+        //                 let textureSize = texture.width * texture.height * ((texture._native === '.jpg' ? 3 : 4) / 1024 / 1024);
+        //                 totalTextureSize += textureSize;
+        //                 // sizeStr = textureSize.toFixed(3) + 'M';
+        //                 formatSize = Math.round(textureSize * 1000) / 1000;
+        //             } else if (content === 'cc.SpriteFrame') {
+        //                 preview = item.content._texture.url;
+        //             }
+        //         }
+        //         cacheData.push({
+        //             queueId: item.queueId,
+        //             type: item.type,
+        //             name: itemName,
+        //             preview: preview,
+        //             id: item.id,
+        //             content: content,
+        //             size: formatSize
+        //         });
+        //     }
+        // }
+        // let cacheTitle = `缓存 [文件总数:${cacheData.length}][纹理缓存:${totalTextureSize.toFixed(2) + 'M'}]`;
+        // return [cacheData, cacheTitle];
     }
 }
