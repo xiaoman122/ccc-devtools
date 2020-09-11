@@ -21,7 +21,7 @@ const initConsoleUtil = function () {
                 }
                 console.groupEnd();
             } else {
-                console.log(nameValue + propValue + indexValue, nameStyle, propStyle,
+                console.log("ccc-devtools", nameValue + propValue + indexValue, nameStyle, propStyle,
                     indexStyle);
             }
         }
