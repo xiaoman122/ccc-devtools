@@ -120,8 +120,8 @@ const app = new Vue({
                 i++;
             }
             window['temp' + i] = this.selectedNode;
-            console.log('temp' + i);
-            console.log(window['temp' + i]);
+            console.log("ccc-devtools", 'temp' + i);
+            console.log("ccc-devtools", window['temp' + i]);
         },
         outputComponentHandler(component) {
             let i = 1;
@@ -129,8 +129,8 @@ const app = new Vue({
                 i++;
             }
             window['temp' + i] = this.selectedNode.getComponent(component);
-            console.log('temp' + i);
-            console.log(window['temp' + i]);
+            console.log("ccc-devtools", 'temp' + i);
+            console.log("ccc-devtools", window['temp' + i]);
         },
         drawNodeRect() {
             cc.where(this.selectedNode);
